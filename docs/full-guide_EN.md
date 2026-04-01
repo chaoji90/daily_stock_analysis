@@ -76,9 +76,15 @@ Go to your forked repo → `Settings` → `Secrets and variables` → `Actions` 
 | `DISCORD_WEBHOOK_URL` | Discord Webhook URL ([How to create](https://support.discord.com/hc/en-us/articles/228383668)) | Optional |
 | `DISCORD_BOT_TOKEN` | Discord Bot Token (choose one with Webhook) | Optional |
 | `DISCORD_MAIN_CHANNEL_ID` | Discord Channel ID (required when using Bot) | Optional |
+| `DISCORD_INTERACTIONS_PUBLIC_KEY` | Discord Public Key (required only for inbound Interaction/Webhook signature verification) | Optional |
+| `SLACK_BOT_TOKEN` | Slack Bot Token (recommended, supports image upload; takes priority over Webhook when both set) | Optional |
+| `SLACK_CHANNEL_ID` | Slack Channel ID (required when using Bot) | Optional |
+| `SLACK_WEBHOOK_URL` | Slack Incoming Webhook URL (text only, no image support) | Optional |
 | `EMAIL_SENDER` | Sender email (e.g., `xxx@qq.com`) | Optional |
 | `EMAIL_PASSWORD` | Email authorization code (not login password) | Optional |
 | `EMAIL_RECEIVERS` | Receiver emails (comma-separated, leave empty to send to self) | Optional |
+| `EMAIL_SENDER_NAME` | Sender display name | Optional |
+| `STOCK_GROUP_N` / `EMAIL_GROUP_N` | Email routing groups (Issue #268): `STOCK_GROUP_N` should be a subset of `STOCK_LIST`; affects email recipients only, not analysis scope or other channels | Optional |
 | `PUSHPLUS_TOKEN` | PushPlus Token ([Get here](https://www.pushplus.plus), Chinese push service) | Optional |
 | `SERVERCHAN3_SENDKEY` | ServerChan v3 Sendkey ([Get here](https://sc3.ft07.com/), mobile app push service) | Optional |
 | `CUSTOM_WEBHOOK_URLS` | Custom Webhook (supports DingTalk, etc., comma-separated) | Optional |
@@ -86,6 +92,8 @@ Go to your forked repo → `Settings` → `Secrets and variables` → `Actions` 
 | `WEBHOOK_VERIFY_SSL` | Verify Webhook HTTPS certificates (default true). Set to false for self-signed certs. WARNING: Disabling has serious security risk (MITM), use only on trusted internal networks | Optional |
 
 > *Note: Configure at least one channel; multiple channels will all receive notifications
+>
+> The default `daily_analysis.yml` in this repository only exports fixed Secret / Variable names. Arbitrary numbered env vars such as `STOCK_GROUP_1` and `EMAIL_GROUP_1` are not auto-injected into the job, so grouped email routing is not available in the stock workflow unless you explicitly extend the workflow's `env:` mapping in your own fork.
 
 #### Push Behavior Configuration
 
@@ -93,6 +101,7 @@ Go to your forked repo → `Settings` → `Secrets and variables` → `Actions` 
 |------------|------|:----:|
 | `SINGLE_STOCK_NOTIFY` | Single stock push mode: set to `true` to push immediately after each stock analysis | Optional |
 | `REPORT_TYPE` | Report type: `simple` (concise), `full` (complete), `brief` (3-5 sentences), Docker recommended: `full` | Optional |
+| `REPORT_LANGUAGE` | Report output language: `zh` (default Chinese) / `en` (English); also updates prompt instructions, templates, notification fallbacks, and fixed copy in the Web report view | Optional |
 | `REPORT_TEMPLATES_DIR` | Jinja2 template directory (relative to project root, default `templates`) | Optional |
 | `REPORT_RENDERER_ENABLED` | Enable Jinja2 template rendering (default `false`, zero regression) | Optional |
 | `REPORT_INTEGRITY_ENABLED` | Enable report integrity checks, retry or placeholder on missing fields (default `true`) | Optional |
@@ -180,10 +189,16 @@ Default schedule: Every weekday at **18:00 (Beijing Time)** automatic execution.
 | `DISCORD_WEBHOOK_URL` | Discord Webhook URL | Optional |
 | `DISCORD_BOT_TOKEN` | Discord Bot Token (choose one with Webhook) | Optional |
 | `DISCORD_MAIN_CHANNEL_ID` | Discord Channel ID (required when using Bot) | Optional |
+| `DISCORD_INTERACTIONS_PUBLIC_KEY` | Discord Public Key (required only for inbound Interaction/Webhook signature verification) | Optional |
 | `DISCORD_MAX_WORDS` | Discord Word Limit (default 2000 for un-upgraded servers) | Optional |
+| `SLACK_BOT_TOKEN` | Slack Bot Token (recommended, supports image upload; takes priority over Webhook when both set) | Optional |
+| `SLACK_CHANNEL_ID` | Slack Channel ID (required when using Bot) | Optional |
+| `SLACK_WEBHOOK_URL` | Slack Incoming Webhook URL (text only, no image support) | Optional |
 | `EMAIL_SENDER` | Sender email | Optional |
 | `EMAIL_PASSWORD` | Email authorization code (not login password) | Optional |
 | `EMAIL_RECEIVERS` | Receiver emails (comma-separated, leave empty to send to self) | Optional |
+| `EMAIL_SENDER_NAME` | Sender display name | Optional |
+| `STOCK_GROUP_N` / `EMAIL_GROUP_N` | Email routing groups (Issue #268): `STOCK_GROUP_N` should stay within `STOCK_LIST` and only changes email recipients | Optional |
 | `CUSTOM_WEBHOOK_URLS` | Custom Webhook (comma-separated) | Optional |
 | `CUSTOM_WEBHOOK_BEARER_TOKEN` | Custom Webhook Bearer Token | Optional |
 | `WEBHOOK_VERIFY_SSL` | Webhook HTTPS certificate verification (default true). Set to false for self-signed certs. WARNING: Disabling has serious security risk | Optional |
@@ -191,6 +206,8 @@ Default schedule: Every weekday at **18:00 (Beijing Time)** automatic execution.
 | `PUSHOVER_API_TOKEN` | Pushover API Token | Optional |
 | `PUSHPLUS_TOKEN` | PushPlus Token (Chinese push service) | Optional |
 | `SERVERCHAN3_SENDKEY` | ServerChan v3 Sendkey | Optional |
+
+> Note: the default `daily_analysis` GitHub Actions workflow only maps fixed variable names. It does not automatically import arbitrary numbered variables such as `STOCK_GROUP_N` / `EMAIL_GROUP_N`. This feature therefore works in local `.env`, Docker, or any runtime where you explicitly inject those variables.
 
 #### Feishu Cloud Document Configuration (Optional, solves message truncation issues)
 
@@ -242,10 +259,13 @@ Default schedule: Every weekday at **18:00 (Beijing Time)** automatic execution.
 > - **US/HK stocks**: Returns `not_supported` fallback block.
 > - Any exception uses fail-open logic, only logs errors without affecting the main technical/news/chip pipeline.
 > - **Field contracts**:
+>   - `fundamental_context.belong_boards` = related board list for the stock (currently populated for A-shares only; `[]` when unavailable);
 >   - `fundamental_context.boards.data` = `sector_rankings` (sector rise/fall leaderboard, structure `{top, bottom}`);
 >   - `get_stock_info.belong_boards` = list of sectors the individual stock belongs to;
 >   - `get_stock_info.boards` is a compatibility alias, value is identical to `belong_boards` (removal considered only in major version updates);
 >   - `get_stock_info.sector_rankings` stays consistent with `fundamental_context.boards.data`.
+>   - `AnalysisReport.details.belong_boards` = related board list in structured report details;
+>   - `AnalysisReport.details.sector_rankings` = sector leaderboard in structured report details for board-linkage display.
 > - **Sector leaderboard** uses a fixed fallback order: consistent with global priority.
 > - **Timeout control** is a `best-effort` soft timeout: the stage will quickly degrade and continue execution based on the budget, but does not guarantee a hard interrupt of underlying third-party network calls.
 > - `FUNDAMENTAL_STAGE_TIMEOUT_SECONDS=1.5` indicates the target budget for the newly added fundamental stage, not a strict hard SLA.
@@ -273,6 +293,8 @@ Default schedule: Every weekday at **18:00 (Beijing Time)** automatic execution.
 ---
 
 ## Docker Deployment
+
+The image uses prebuilt frontend assets under `/app/static` at runtime, so the running `server` container does not require the `apps/dsa-web` source tree or runtime `npm`. If WebUI cannot be opened after Docker deployment, first verify that `/app/static/index.html` exists inside the container.
 
 ### Quick Start
 
@@ -429,6 +451,10 @@ crontab -e
 # Add: 0 18 * * 1-5 cd /path/to/project && python main.py
 ```
 
+> Note: Scheduled mode reloads the saved `STOCK_LIST` before each run. If you also pass `--stocks`, it will not pin future scheduled executions to the startup snapshot; use a normal one-off run when you want to analyze a temporary stock list.
+>
+> When the built-in scheduler is started via `python main.py --schedule`, `python main.py --serve --schedule`, or an equivalent local mode, saving a new `SCHEDULE_TIME` from the WebUI will rebind the daily job on the next scheduler poll without restarting the process. The previous trigger time is removed instead of being kept alongside the new one.
+
 ---
 
 ## Notification Channel Configuration
@@ -463,6 +489,19 @@ Supported email providers:
 - QQ Mail: smtp.qq.com:465
 - 163 Mail: smtp.163.com:465
 - Gmail: smtp.gmail.com:587
+
+**Send different stock groups to different email recipients** (Issue #268, optional):
+Configure `STOCK_GROUP_N` and `EMAIL_GROUP_N` to route different stock groups to different inboxes. `STOCK_LIST` still defines the actual analysis scope, so each `STOCK_GROUP_N` should be a subset of `STOCK_LIST`. This only changes email recipients; Telegram, WeChat, Webhook, and other channels still receive the full report for the entire `STOCK_LIST`. Market review emails are sent to all configured group recipients.
+
+> GitHub Actions limitation: as of 2026-03-29, the repository's default `daily_analysis.yml` does not auto-import arbitrary numbered `STOCK_GROUP_N` / `EMAIL_GROUP_N` variables. If you only add them in repository Secrets / Variables without extending the workflow `env:` block, they will not reach the runtime process.
+
+```bash
+STOCK_LIST=600519,300750,002594,AAPL
+STOCK_GROUP_1=600519,300750
+EMAIL_GROUP_1=user1@example.com
+STOCK_GROUP_2=002594,AAPL
+EMAIL_GROUP_2=user2@example.com
+```
 
 ### Custom Webhook
 
@@ -500,6 +539,41 @@ DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/xxx/yyy
 ```bash
 DISCORD_BOT_TOKEN=your_bot_token
 DISCORD_MAIN_CHANNEL_ID=your_channel_id
+```
+
+If you need to receive Discord Slash Command / Interaction callbacks instead of only sending notifications to Discord, also copy the public key from `Discord Developer Portal -> General Information -> Public Key` and configure:
+
+```bash
+DISCORD_INTERACTIONS_PUBLIC_KEY=your_public_key
+```
+
+Without this public key, inbound Discord webhook requests are rejected.
+
+### Slack
+
+Slack supports two push methods. When both are configured, Bot API takes priority to ensure text and images land in the same channel:
+
+**Method 1: Bot API (Recommended, supports image upload)**
+
+1. Create a Slack App: https://api.slack.com/apps → Create New App
+2. Add Bot Token Scopes: `chat:write`, `files:write`
+3. Install to workspace and get Bot Token (xoxb-...)
+4. Get Channel ID: channel details → copy channel ID at the bottom
+5. Configure environment variables:
+
+```bash
+SLACK_BOT_TOKEN=xoxb-...
+SLACK_CHANNEL_ID=C01234567
+```
+
+**Method 2: Incoming Webhook (Simple setup, text only)**
+
+1. Create an Incoming Webhook in Slack App management page
+2. Copy the Webhook URL
+3. Configure environment variable:
+
+```bash
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T.../B.../xxx
 ```
 
 ### Pushover (iOS/Android Push)
@@ -764,6 +838,17 @@ A: Modify `STOCK_LIST` environment variable, separate multiple codes with commas
 
 ### Q: GitHub Actions not executing?
 A: Check if Actions is enabled, and if cron expression is correct (note it's UTC time).
+
+---
+
+## Portfolio Web Notes
+
+### Manual FX refresh on `/portfolio`
+
+- The FX status card on the Web `/portfolio` page includes a manual refresh action.
+- The button calls the existing `POST /api/v1/portfolio/fx/refresh` endpoint and reloads snapshot/risk data only.
+- If upstream FX fetch fails, the page may still remain stale after refresh and will explain the fallback result inline.
+- When `PORTFOLIO_FX_UPDATE_ENABLED=false`, the refresh API returns an explicit disabled status and the page shows that online FX refresh is disabled instead of implying that no refreshable pairs exist.
 
 ---
 
