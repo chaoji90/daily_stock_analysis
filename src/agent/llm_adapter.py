@@ -336,6 +336,7 @@ class LLMToolAdapter:
             if keys:
                 call_kwargs["api_key"] = keys[0]
             call_kwargs.update(extra_litellm_params(model, self._config))
+            call_kwargs["drop_params"] = True
             response = litellm.completion(**call_kwargs)
 
         return self._parse_litellm_response(response, model)
