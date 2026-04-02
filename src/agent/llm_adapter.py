@@ -318,7 +318,7 @@ class LLMToolAdapter:
         if tools:
             call_kwargs["tools"] = tools
 
-        call_kwargs["model"]="openrouter/qwen/qwen3.6-plus-preview:free"
+      
         
         # Use Router for primary model (multi-key), direct litellm for others
         use_channel_router = self._has_channel_config()
@@ -327,11 +327,11 @@ class LLMToolAdapter:
         
         if use_channel_router and self._router and model in _router_model_names:
             # Channel / YAML path: Router manages all models in its model_list
-            call_kwargs["model"]="openrouter/qwen/qwen3.6-plus-preview:free"
+           
             response = self._router.completion(**call_kwargs)
         elif self._router and model == agent_primary_model and not use_channel_router:
             # Legacy path: Router for primary model multi-key
-            call_kwargs["model"]="openrouter/qwen/qwen3.6-plus-preview:free"
+           
             response = self._router.completion(**call_kwargs)
         else:
             # Legacy/direct-env path: direct call (also handles direct-env
@@ -341,7 +341,7 @@ class LLMToolAdapter:
             if keys:
                 call_kwargs["api_key"] = keys[0]
             call_kwargs.update(extra_litellm_params(model, self._config))
-            call_kwargs["model"]="openrouter/qwen/qwen3.6-plus-preview:free"
+            
             response = litellm.completion(**call_kwargs)
 
         return self._parse_litellm_response(response, model)
