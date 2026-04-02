@@ -1044,7 +1044,6 @@ class GeminiAnalyzer:
 
                 
                 _router_model_names = set(get_configured_llm_models(config.llm_model_list))
-                call_kwargs["model"]='openrouter/qwen/qwen3.6-plus-preview:free'
                 if use_channel_router and self._router and model in _router_model_names:
                     # Channel / YAML path: Router manages key + base_url per model
                     response = self._router.completion(**call_kwargs)
