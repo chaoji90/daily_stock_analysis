@@ -1042,6 +1042,7 @@ class GeminiAnalyzer:
                 if extra:
                     call_kwargs["extra_body"] = extra
 
+                call_kwargs["drop_params"] = True
                 _router_model_names = set(get_configured_llm_models(config.llm_model_list))
                 if use_channel_router and self._router and model in _router_model_names:
                     # Channel / YAML path: Router manages key + base_url per model
