@@ -322,6 +322,7 @@ class LLMToolAdapter:
         use_channel_router = self._has_channel_config()
         _router_model_names = set(get_configured_llm_models(self._config.llm_model_list))
         agent_primary_model = get_effective_agent_primary_model(self._config)
+        call_kwargs["drop_params"] = True
         if use_channel_router and self._router and model in _router_model_names:
             # Channel / YAML path: Router manages all models in its model_list
             response = self._router.completion(**call_kwargs)
@@ -336,7 +337,6 @@ class LLMToolAdapter:
             if keys:
                 call_kwargs["api_key"] = keys[0]
             call_kwargs.update(extra_litellm_params(model, self._config))
-            call_kwargs["drop_params"] = True
             response = litellm.completion(**call_kwargs)
 
         return self._parse_litellm_response(response, model)
